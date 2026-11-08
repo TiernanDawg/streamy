@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct StreamyApp: App {
+struct FrugalForkApp: App {
     @State private var model = AppModel()
     @AppStorage("frugalfork.appearance") private var appearance = "system"
 
