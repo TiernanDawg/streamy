@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 enum KeychainStore {
-    private static let service = "com.tiernan.savorcart"
+    private static let service = "com.tiernan.frugalfork"
     private static let account = "groq-api-key"
 
     static func save(_ value: String) throws {
