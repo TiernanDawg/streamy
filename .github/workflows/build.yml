@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: streamy-build
+  group: savorcart-build
   cancel-in-progress: true
 
 permissions:
@@ -43,12 +43,12 @@ jobs:
           set -o pipefail
           mkdir -p build
           xcodebuild archive \
-            -project Streamy.xcodeproj \
-            -scheme Streamy \
+            -project SavorCart.xcodeproj \
+            -scheme SavorCart \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
-            -archivePath build/Streamy.xcarchive \
+            -archivePath build/SavorCart.xcarchive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -57,17 +57,17 @@ jobs:
 
       - name: Package IPA
         run: |
-          APP=$(find build/Streamy.xcarchive/Products/Applications -maxdepth 1 -name '*.app' | head -n 1)
+          APP=$(find build/SavorCart.xcarchive/Products/Applications -maxdepth 1 -name '*.app' | head -n 1)
           test -n "$APP"
           mkdir -p Payload
           cp -R "$APP" Payload/
-          zip -qry Streamy.ipa Payload
+          zip -qry SavorCart.ipa Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Streamy-ipa
-          path: Streamy.ipa
+          name: SavorCart-ipa
+          path: SavorCart.ipa
           if-no-files-found: error
 
       - name: Print build errors
@@ -78,6 +78,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: Streamy-build-log
+          name: SavorCart-build-log
           path: build/xcodebuild.log
           if-no-files-found: ignore
