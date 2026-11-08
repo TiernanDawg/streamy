@@ -28,8 +28,8 @@ guard let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locatio
 }
 context.drawLinearGradient(
     gradient,
-    start: CGPoint(x: 0, y: side),
-    end: CGPoint(x: side, y: 0),
+    start: CGPoint(x: 0, y: CGFloat(side)),
+    end: CGPoint(x: CGFloat(side), y: 0),
     options: []
 )
 
