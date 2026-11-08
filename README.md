@@ -12,14 +12,14 @@ SavorCart is a native iPhone recipe and grocery-cost planner. Describe a meal in
 - Practical package-size suggestions and package-count/leftover calculations.
 - Walmart product search links with best-effort extraction of public structured product data.
 - Manual/unavailable price distinction. Manually entered prices are per package; only confirmed prices contribute to the displayed total.
-- ZIP code preference for Walmart search context.
+- A saved ZIP-code preference/reminder; Walmart may still require the user to choose a store or delivery location on its own website.
 - No app account, subscription, advertising, analytics, backend or third-party SDK.
 
 ## Walmart pricing boundary
 
 Walmart's public Marketplace APIs are seller-oriented. Walmart I/O's affiliate and localized commerce APIs require the appropriate partner/affiliate access. This app does not use private endpoints or pretend that inaccessible listings are live data.
 
-The app makes a best-effort request to the public Walmart search page and reads product/price information only when the page exposes usable structured data. Walmart may block automated access, omit local prices, or require location/account context. When that happens, the app opens the Walmart search page and asks the user to confirm the exact product, package size and price. A manually entered price is never labeled as a live verified price.
+The app makes a best-effort request to the public Walmart search page and reads product/price information only when the page exposes usable structured data. Walmart may block automated access, omit local prices, or require location/account context. The saved ZIP is a reminder only; the app cannot set the location in a Walmart account or guarantee store-specific availability. When page data is unavailable, the app opens the Walmart search page and asks the user to confirm the exact product, package size and price. Package sizes are AI suggestions until checked against the actual listing. A manually entered price is never labeled as a live verified price.
 
 ## Groq setup
 
