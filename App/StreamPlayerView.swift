@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import Observation
+import UIKit
 
 @MainActor
 @Observable
@@ -29,6 +30,7 @@ final class WebViewState {
 struct StreamPlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var state = WebViewState()
+    @AppStorage("streamy.keepAwake") private var keepAwake = true
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -127,10 +129,10 @@ struct StreamPlayerView: View {
         }
         .statusBarHidden(true)
         .onAppear {
-            UIApplication.shared.isIdleTimerDisabled = true
+            UIApplication.shared.isIdleTimerDisabled = keepAwake
         }
         .onDisappear {
-            UIApplication.shared.isIdleTimerDisabled = false
+            UIApplication.shared.isIdleTimerDisabled = keepAwake
         }
     }
 }
@@ -148,7 +150,7 @@ private struct WebContentView: UIViewRepresentable {
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
 
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = GamepadEnabledWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
@@ -157,6 +159,7 @@ private struct WebContentView: UIViewRepresentable {
         webView.backgroundColor = .black
         webView.scrollView.backgroundColor = .black
         state.webView = webView
+        webView.becomeFirstResponder()
 
         let request = URLRequest(
             url: URL(string: "https://www.xbox.com/play")!,
@@ -185,6 +188,7 @@ private struct WebContentView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             state.isLoading = false
             state.canGoBack = webView.canGoBack
+            webView.becomeFirstResponder()
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -225,5 +229,17 @@ private struct WebContentView: UIViewRepresentable {
             }
             return nil
         }
+    }
+}
+
+
+private final class GamepadEnabledWebView: WKWebView {
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        becomeFirstResponder()
     }
 }
