@@ -39,7 +39,7 @@ struct SettingsView: View {
                     .onChange(of: model.zipCode) { _, newValue in
                         model.zipCode = String(newValue.filter(\.isNumber).prefix(5))
                     }
-                Text("Your ZIP helps you check local Walmart listings. The app does not sign in to Walmart or access your account.")
+                Text("Saved for reference. Walmart may ask you to choose a store or delivery ZIP on its website; the app cannot set your Walmart account location.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("Privacy & storage") {
