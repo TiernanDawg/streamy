@@ -9,7 +9,7 @@ final class WebViewState {
     var isLoading = true
     var canGoBack = false
     var errorMessage: String?
-    weak var webView: WKWebView?
+    @ObservationIgnored weak var webView: WKWebView?
 
     func goBack() {
         guard let webView, webView.canGoBack else { return }
