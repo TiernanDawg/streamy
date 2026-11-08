@@ -4,9 +4,7 @@ enum WalmartService {
     static func searchURL(for query: String, zipCode: String) -> URL {
         var components = URLComponents(string: "https://www.walmart.com/search")!
         components.queryItems = [URLQueryItem(name: "q", value: query)]
-        if !zipCode.isEmpty {
-            components.queryItems?.append(URLQueryItem(name: "facet", value: "fulfillment_method_in_store"))
-        }
+        _ = zipCode
         return components.url!
     }
 
@@ -51,11 +49,11 @@ enum WalmartService {
            let name = dictionary["name"] as? String,
            let rawURL = dictionary["url"] as? String,
            let url = URL(string: rawURL, relativeTo: URL(string: "https://www.walmart.com")),
-           url.host?.contains("walmart.com") == true {
+           url.absoluteURL.host?.contains("walmart.com") == true {
             let offers = dictionary["offers"] as? [String: Any]
             let rawPrice = offers?["price"] as? String ?? (offers?["price"] as? NSNumber)?.stringValue
             let price = rawPrice.flatMap { Decimal(string: $0) }
-            products.append(WalmartProduct(title: name, url: url, verifiedPrice: price,
+            products.append(WalmartProduct(title: name, url: url.absoluteURL, verifiedPrice: price,
                 retrievedAt: price == nil ? nil : Date()))
         }
         dictionary.values.forEach { collectProducts(from: $0, into: &products) }
