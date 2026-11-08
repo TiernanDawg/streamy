@@ -1,6 +1,6 @@
-# SavorCart
+# FrugalFork
 
-SavorCart is a native iPhone recipe and grocery-cost planner. Describe a meal in plain language, generate a complete recipe with Groq, subtract matching pantry inventory, and build a Walmart-focused shopping list.
+FrugalFork is a native iPhone recipe and grocery-cost planner. Describe a meal in plain language, generate a complete recipe with Groq, subtract matching pantry inventory, and build a Walmart-focused shopping list.
 
 ## Features
 
@@ -24,7 +24,7 @@ The app makes a best-effort request to the public Walmart search page and reads 
 ## Groq setup
 
 1. Create a Groq API key at https://console.groq.com/keys.
-2. Open SavorCart → Settings → Groq AI.
+2. Open FrugalFork → Settings → Groq AI.
 3. Paste the key and save it.
 4. Generate recipes from the Create tab.
 
@@ -35,8 +35,8 @@ The app sends recipe prompts directly to the Groq chat completions endpoint usin
 The repository uses XcodeGen and the xcode-27 GitHub Actions runner.
 
 1. Push to main or manually run Actions → Build unsigned IPA.
-2. Download the SavorCart-ipa artifact.
-3. Extract the artifact and sideload SavorCart.ipa using SideStore, AltStore or another compatible signer.
+2. Download the FrugalFork-ipa artifact.
+3. Extract the artifact and sideload FrugalFork.ipa using SideStore, AltStore or another compatible signer.
 
 The IPA is unsigned. Sign it on your own device before installing.
 
