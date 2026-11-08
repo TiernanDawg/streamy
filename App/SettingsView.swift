@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
@@ -69,6 +70,8 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .keyboardDoneButton()
+        .scrollDismissesKeyboard(.interactively)
         .onAppear { keySaved = model.configuredGroqKey }
         .confirmationDialog("Erase recipes, pantry and shopping list?", isPresented: $showResetConfirmation, titleVisibility: .visible) {
             Button("Erase local data", role: .destructive) { model.resetLocalData() }
