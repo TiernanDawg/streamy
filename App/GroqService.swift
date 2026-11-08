@@ -20,7 +20,40 @@ private struct IngredientDraft: Decodable {
     let packageLabel: String
 }
 
+private struct GroqModelsResponse: Decodable {
+    struct Model: Decodable { let id: String }
+    let data: [Model]
+}
+
 enum GroqService {
+    private static let recipeModel = "openai/gpt-oss-20b"
+    private static let baseURL = URL(string: "https://api.groq.com/openai/v1")!
+
+    static func testAPIKey() async throws {
+        guard let apiKey = KeychainStore.load(),
+              !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw GroqError.missingKey
+        }
+        var request = URLRequest(url: baseURL.appendingPathComponent("models"))
+        request.httpMethod = "GET"
+        request.timeoutInterval = 20
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw GroqError.connection(error.localizedDescription)
+        }
+        guard let http = response as? HTTPURLResponse else { throw GroqError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else {
+            throw GroqError.http(status: http.statusCode, data: data)
+        }
+        let models = try JSONDecoder().decode(GroqModelsResponse.self, from: data)
+        guard models.data.contains(where: { $0.id == recipeModel }) else {
+            throw GroqError.modelUnavailable
+        }
+    }
+
     static func generateRecipe(idea: String, servings: Int, pantry: [PantryItem]) async throws -> Recipe {
         guard let apiKey = KeychainStore.load(), !apiKey.isEmpty else { throw GroqError.missingKey }
         let pantryDescription = pantry.isEmpty
@@ -56,7 +89,7 @@ enum GroqService {
         Make the complete meal with the fewest practical new purchases. Do not list pantry ingredients as purchases when inventory covers the needed amount. Keep it affordable without making it incomplete.
         """
         let body: [String: Any] = [
-            "model": "openai/gpt-oss-20b",
+            "model": recipeModel,
             "temperature": 0.25,
             "messages": [
                 ["role": "system", "content": systemPrompt],
@@ -64,17 +97,22 @@ enum GroqService {
             ],
             "response_format": ["type": "json_object"]
         ]
-        var request = URLRequest(url: URL(string: "https://api.groq.com/openai/v1/chat/completions")!)
+        var request = URLRequest(url: baseURL.appendingPathComponent("chat/completions"))
         request.httpMethod = "POST"
         request.timeoutInterval = 90
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw GroqError.connection(error.localizedDescription)
+        }
         guard let http = response as? HTTPURLResponse else { throw GroqError.invalidResponse }
         guard (200...299).contains(http.statusCode) else {
-            throw GroqError.server(String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)")
+            throw GroqError.http(status: http.statusCode, data: data)
         }
         let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let choices = envelope?["choices"] as? [[String: Any]]
@@ -97,14 +135,32 @@ enum GroqService {
             ingredients: ingredients, instructions: draft.instructions, tips: draft.tips)
     }
 }
+
 enum GroqError: LocalizedError {
-    case missingKey, invalidResponse, incompleteRecipe, server(String)
+    case missingKey, invalidResponse, incompleteRecipe, modelUnavailable
+    case connection(String)
+    case http(status: Int, data: Data)
+
     var errorDescription: String? {
         switch self {
-        case .missingKey: return "Add your Groq API key in Settings before generating a recipe."
-        case .invalidResponse: return "Groq returned an unreadable response. Please try again."
-        case .incompleteRecipe: return "The generated recipe was missing ingredients or instructions. Try a more specific meal idea."
-        case .server(let detail): return "Groq request failed: \(detail)"
+        case .missingKey:
+            return "No Groq API key is saved. Add one in Settings."
+        case .invalidResponse:
+            return "Groq returned an unreadable response. Please try again."
+        case .incompleteRecipe:
+            return "The generated recipe was missing ingredients or instructions. Try a more specific meal idea."
+        case .modelUnavailable:
+            return "The key is valid, but Groq did not list the recipe model (openai/gpt-oss-20b) for this account."
+        case .connection(let detail):
+            return "Could not reach Groq. Check your internet connection and try again. Details: \(detail)"
+        case .http(let status, let data):
+            let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            let errorObject = raw?["error"] as? [String: Any]
+            let message = errorObject?["message"] as? String
+            if status == 401 || status == 403 {
+                return "Groq rejected this API key (HTTP \(status)). Check that it was copied correctly, is active, and belongs to your Groq account. Create or replace it at console.groq.com/keys."
+            }
+            return "Groq returned HTTP \(status): \(message ?? "Unexpected API error. Please try again.")"
         }
     }
 }
