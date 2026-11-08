@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @AppStorage("savorcart.appearance") private var appearance = "system"
+    @AppStorage("frugalfork.appearance") private var appearance = "system"
     @State private var apiKey = ""
     @State private var keySaved = false
     @State private var keyError: String?
@@ -60,7 +60,7 @@ struct SettingsView: View {
                 Button("Erase all local app data", role: .destructive) { showResetConfirmation = true }
             }
             Section("About") {
-                LabeledContent("App", value: "SavorCart")
+                LabeledContent("App", value: "FrugalFork")
                 LabeledContent("Version", value: "1.0")
                 Link("Groq API documentation", destination: URL(string: "https://console.groq.com/docs")!)
                 Link("Walmart.com", destination: URL(string: "https://www.walmart.com")!)
