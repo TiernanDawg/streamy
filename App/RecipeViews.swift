@@ -81,7 +81,7 @@ struct HomeView: View {
                 }
             }.padding(.horizontal, 20).padding(.bottom, 28)
         }
-        .navigationTitle("SavorCart").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("FrugalFork").navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedRecipe) { recipe in NavigationStack { RecipeDetailView(recipe: recipe) } }
     }
     private func createRecipe() async {
