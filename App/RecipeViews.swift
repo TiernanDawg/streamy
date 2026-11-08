@@ -360,7 +360,7 @@ struct WalmartSearchView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(product.title).font(.headline)
                             if let price = product.verifiedPrice {
-                                Text(NSDecimalNumber(decimal: price), formatter: Self.currencyFormatter).font(.title3.bold())
+                                Text(price.formatted(.currency(code: "USD"))).font(.title3.bold())
                                 Text("Verified from Walmart page · \(product.retrievedAt ?? Date(), style: .time)")
                                     .font(.caption2).foregroundStyle(.secondary)
                             } else {
