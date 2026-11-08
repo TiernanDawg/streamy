@@ -5,30 +5,34 @@ FrugalFork is a native iPhone recipe and grocery-cost planner. Describe a meal i
 ## Features
 
 - Native SwiftUI interface designed for iPhone and iOS 27.
-- Groq-powered recipes with quantities, serving count, preparation and cooking times, and sequential instructions.
-- Groq API key stored in iOS Keychain with device-only accessibility.
+- Groq-powered recipes with quantities, servings, preparation and cooking times, and sequential instructions.
+- Strict structured-output requests with local validation and a one-time recovery retry.
+- Groq API key stored in iOS Keychain with device-only accessibility; test a newly entered key before saving it.
 - Local recipe library, pantry inventory and shopping list.
 - Pantry deduction when ingredient names and units match.
-- Practical package-size suggestions and package-count/leftover calculations.
+- Package-size suggestions and package-count/leftover calculations.
 - Walmart product search links with best-effort extraction of public structured product data.
 - Manual/unavailable price distinction. Manually entered prices are per package; only confirmed prices contribute to the displayed total.
-- A saved ZIP-code preference/reminder; Walmart may still require the user to choose a store or delivery location on its own website.
+- Saved ZIP-code preference; Walmart may still require the user to choose a store or delivery location on its website.
 - No app account, subscription, advertising, analytics, backend or third-party SDK.
 
 ## Walmart pricing boundary
 
-Walmart's public Marketplace APIs are seller-oriented. Walmart I/O's affiliate and localized commerce APIs require the appropriate partner/affiliate access. This app does not use private endpoints or pretend that inaccessible listings are live data.
+Walmart's public Marketplace APIs are seller-oriented. Walmart I/O's affiliate and localized commerce APIs require the appropriate partner or affiliate access. This app does not use private endpoints or pretend that inaccessible listings are live data.
 
-The app makes a best-effort request to the public Walmart search page and reads product/price information only when the page exposes usable structured data. Walmart may block automated access, omit local prices, or require location/account context. The saved ZIP is a reminder only; the app cannot set the location in a Walmart account or guarantee store-specific availability. When page data is unavailable, the app opens the Walmart search page and asks the user to confirm the exact product, package size and price. Package sizes are AI suggestions until checked against the actual listing. A manually entered price is never labeled as a live verified price.
+The app makes a best-effort request to the public Walmart search page and reads product or price information only when the page exposes usable structured data. Walmart may block automated access, omit local prices, or require location/account context. The saved ZIP is a reminder only; the app cannot set the location in a Walmart account or guarantee store-specific availability. When page data is unavailable, the app opens Walmart search and asks the user to confirm the exact product, package size and price. Package sizes are AI suggestions until checked against the actual listing.
 
-## Groq setup
+## Groq setup and troubleshooting
 
-1. Create a Groq API key at https://console.groq.com/keys.
+1. Create an API key at https://console.groq.com/keys.
 2. Open FrugalFork → Settings → Groq AI.
-3. Paste the key and save it.
-4. Generate recipes from the Create tab.
+3. Paste the key and tap Test API key. The test calls the same Groq model used for recipes without relying on JSON formatting.
+4. If the test succeeds, tap Save API key.
+5. Generate a recipe from the Create tab.
 
-The app sends recipe prompts directly to the Groq chat completions endpoint using the openai/gpt-oss-20b model. No key is embedded in the repository.
+Recipe requests use the openai/gpt-oss-20b model and strict structured outputs. If Groq rejects the structured response format, the app retries once without server-side schema enforcement and validates the returned JSON locally. Missing optional cooking notes are accepted; malformed or incomplete recipes are not saved.
+
+The API key is never embedded in the repository. It is sent directly from the iPhone to Groq.
 
 ## Build
 
