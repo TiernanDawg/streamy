@@ -19,7 +19,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
             }
-            Section("Groq AI") {
+            Section {
                 SecureField("Groq API key", text: $apiKey)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                 HStack {
@@ -42,6 +42,8 @@ struct SettingsView: View {
                     do { try KeychainStore.delete(); keySaved = false }
                     catch { keyError = error.localizedDescription }
                 }.disabled(!model.configuredGroqKey)
+            } header: {
+                Text("Groq AI")
             } footer: {
                 Text("Your key stays on this iPhone in Keychain. It is sent directly to Groq when you generate a recipe. Never paste it into a public repository.")
             }
