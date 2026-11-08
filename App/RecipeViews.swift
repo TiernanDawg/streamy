@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @Environment(AppModel.self) private var model
@@ -83,6 +84,7 @@ struct HomeView: View {
         }
         .navigationTitle("FrugalFork").navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedRecipe) { recipe in NavigationStack { RecipeDetailView(recipe: recipe) } }
+        .sensoryFeedback(.selection, trigger: servings)
     }
     private func createRecipe() async {
         if let recipe = await model.generate(idea: idea, servings: servings) { selectedRecipe = recipe }
@@ -196,6 +198,9 @@ struct RecipeDetailView: View {
         }
         .navigationTitle("Recipe").navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+        .onChange(of: cookingMode) { _, active in UIApplication.shared.isIdleTimerDisabled = active }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
+        .sensoryFeedback(.success, trigger: added)
     }
 }
 
