@@ -20,6 +20,7 @@ targets:
     sources:
       - path: App
     info:
+      path: App/Info.plist
       properties:
         CFBundleDisplayName: Streamy
         UILaunchScreen: {}
