@@ -7,6 +7,9 @@ struct SettingsView: View {
     @State private var apiKey = ""
     @State private var keySaved = false
     @State private var keyError: String?
+    @State private var isTestingAPIKey = false
+    @State private var apiTestMessage: String?
+    @State private var apiTestSucceeded = false
     @State private var showResetConfirmation = false
 
     var body: some View {
@@ -23,6 +26,9 @@ struct SettingsView: View {
             Section {
                 SecureField("Groq API key", text: $apiKey)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .onChange(of: apiKey) { _, _ in
+                        apiTestMessage = nil
+                    }
                 HStack {
                     Image(systemName: model.configuredGroqKey ? "checkmark.shield.fill" : "exclamationmark.shield")
                         .foregroundStyle(model.configuredGroqKey ? .green : .secondary)
@@ -35,18 +41,49 @@ struct SettingsView: View {
                         apiKey = ""
                         keySaved = true
                         keyError = nil
+                        apiTestMessage = nil
                     } catch { keyError = error.localizedDescription }
                 }.disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button {
+                    Task {
+                        isTestingAPIKey = true
+                        apiTestMessage = nil
+                        defer { isTestingAPIKey = false }
+                        do {
+                            try await GroqService.testAPIKey()
+                            apiTestSucceeded = true
+                            apiTestMessage = "Connection successful. Your saved key is valid and Groq is reachable."
+                        } catch {
+                            apiTestSucceeded = false
+                            apiTestMessage = error.localizedDescription
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if isTestingAPIKey { ProgressView() }
+                        Text(isTestingAPIKey ? "Testing connection…" : "Test API key")
+                    }
+                }
+                .disabled(isTestingAPIKey || !model.configuredGroqKey)
+                if let apiTestMessage {
+                    Label(apiTestMessage, systemImage: apiTestSucceeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(apiTestSucceeded ? .green : .red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if keySaved { Label("Saved securely", systemImage: "checkmark.circle.fill").font(.footnote).foregroundStyle(.green) }
                 if let keyError { Text(keyError).font(.footnote).foregroundStyle(.red) }
                 Button("Remove API key", role: .destructive) {
-                    do { try KeychainStore.delete(); keySaved = false }
-                    catch { keyError = error.localizedDescription }
+                    do {
+                        try KeychainStore.delete()
+                        keySaved = false
+                        apiTestMessage = nil
+                    } catch { keyError = error.localizedDescription }
                 }.disabled(!model.configuredGroqKey)
             } header: {
                 Text("Groq AI")
             } footer: {
-                Text("Your key stays on this iPhone in Keychain. It is sent directly to Groq when you generate a recipe. Never paste it into a public repository.")
+                Text("Your key stays on this iPhone in Keychain. Use Test API key to verify it before generating recipes. The key is sent directly to Groq. Never paste it into a public repository.")
             }
             Section("Walmart") {
                 TextField("ZIP code", text: $model.zipCode)
