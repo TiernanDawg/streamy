@@ -19,8 +19,6 @@ targets:
     platform: iOS
     sources:
       - path: App
-    resources:
-      - path: App/Assets.xcassets
     info:
       properties:
         CFBundleDisplayName: Streamy
