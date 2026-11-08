@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("savorcart.appearance") private var appearance = "system"
     @State private var apiKey = ""
     @State private var keySaved = false
     @State private var keyError: String?
@@ -10,6 +11,14 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var model = model
         return Form {
+            Section("Appearance") {
+                Picker("Theme", selection: $appearance) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .pickerStyle(.segmented)
+            }
             Section("Groq AI") {
                 SecureField("Groq API key", text: $apiKey)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
