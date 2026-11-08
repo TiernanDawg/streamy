@@ -1,6 +1,20 @@
 import SwiftUI
 import UIKit
 
+extension View {
+    func keyboardDoneButton() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+                .fontWeight(.semibold)
+            }
+        }
+    }
+}
+
 struct HomeView: View {
     @Environment(AppModel.self) private var model
     @State private var idea = ""
@@ -85,6 +99,8 @@ struct HomeView: View {
         .navigationTitle("FrugalFork").navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedRecipe) { recipe in NavigationStack { RecipeDetailView(recipe: recipe) } }
         .sensoryFeedback(.selection, trigger: servings)
+        .keyboardDoneButton()
+        .scrollDismissesKeyboard(.interactively)
     }
     private func createRecipe() async {
         if let recipe = await model.generate(idea: idea, servings: servings) { selectedRecipe = recipe }
@@ -250,6 +266,8 @@ struct PantryView: View {
                 Text("Pantry deductions require matching ingredient names and units. Check quantities before shopping.")
             }
         }.navigationTitle("Pantry")
+            .keyboardDoneButton()
+            .scrollDismissesKeyboard(.interactively)
     }
 }
 
@@ -326,6 +344,8 @@ struct ShoppingView: View {
                         Button("Clear shopping list", role: .destructive) { model.clearShoppingList() }
                     }
                 }.listStyle(.insetGrouped)
+                    .keyboardDoneButton()
+                    .scrollDismissesKeyboard(.interactively)
             }
         }
         .navigationTitle("Shopping list")
