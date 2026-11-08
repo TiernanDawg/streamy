@@ -1,37 +1,45 @@
-# Streamy
+# SavorCart
 
-Streamy is a standalone iPhone app shell for Xbox Cloud Gaming. It opens the official Xbox Cloud Gaming experience inside an app-managed `WKWebView`, so you launch from the Home Screen and stay inside Streamy instead of being sent to Safari.
+SavorCart is a native iPhone recipe and grocery-cost planner. Describe a meal in plain language, generate a complete recipe with Groq, subtract matching pantry inventory, and build a Walmart-focused shopping list.
 
-## What it does
+## Features
 
-- Opens `https://www.xbox.com/play` in a full-screen native app surface.
-- Uses the persistent default WebKit website data store so Microsoft sign-in cookies can survive app launches.
-- Keeps browser chrome and Safari navigation UI out of the experience.
-- Provides native back, reload, loading, and error controls.
-- Makes the embedded WebKit view first responder to enable WebKit's Gamepad API path where supported.
-- Allows inline media playback and supports landscape orientations.
-- Includes a settings screen and a one-tap option to clear Xbox website data.
-- Builds an unsigned IPA through GitHub Actions on `xcode-27`.
+- Native SwiftUI interface designed for iPhone and iOS 27.
+- Groq-powered recipes with quantities, serving count, preparation and cooking times, and sequential instructions.
+- Groq API key stored in iOS Keychain with device-only accessibility.
+- Local recipe library, pantry inventory and shopping list.
+- Pantry deduction when ingredient names and units match.
+- Practical package-size suggestions and package-count/leftover calculations.
+- Walmart product search links with best-effort extraction of public structured product data.
+- Manual/unavailable price distinction. Manually entered prices are per package; only confirmed prices contribute to the displayed total.
+- ZIP code preference for Walmart search context.
+- No app account, subscription, advertising, analytics, backend or third-party SDK.
 
-## Important compatibility boundary
+## Walmart pricing boundary
 
-Microsoft's published iOS instructions direct users to Safari for Xbox Cloud Gaming. Streamy uses the official Xbox website in WebKit; Microsoft does not document or guarantee that the full streaming, Microsoft sign-in, and Gamepad API experience works inside a third-party `WKWebView`. Validate sign-in, game launch, controller input, and audio on the physical iPhone before relying on it. The embedded view explicitly becomes first responder because WebKit has documented that focus is required for Gamepad API events in embedded views.
+Walmart's public Marketplace APIs are seller-oriented. Walmart I/O's affiliate and localized commerce APIs require the appropriate partner/affiliate access. This app does not use private endpoints or pretend that inaccessible listings are live data.
 
-A native client such as RayxCloud/Stratix can avoid the website entirely, but it implements Microsoft's undocumented, proprietary xCloud session and signaling protocol. This project deliberately does not copy or depend on those private endpoints.
+The app makes a best-effort request to the public Walmart search page and reads product/price information only when the page exposes usable structured data. Walmart may block automated access, omit local prices, or require location/account context. When that happens, the app opens the Walmart search page and asks the user to confirm the exact product, package size and price. A manually entered price is never labeled as a live verified price.
 
-## Build locally
+## Groq setup
 
-1. Install Xcode 27 and Homebrew.
-2. Install XcodeGen: `brew install xcodegen`.
-3. Generate the project: `xcodegen generate`.
-4. Open `Streamy.xcodeproj` and build for an iPhone, or run the same unsigned archive commands used in `.github/workflows/build.yml`.
+1. Create a Groq API key at https://console.groq.com/keys.
+2. Open SavorCart → Settings → Groq AI.
+3. Paste the key and save it.
+4. Generate recipes from the Create tab.
 
-## Build an IPA
+The app sends recipe prompts directly to the Groq chat completions endpoint using the openai/gpt-oss-20b model. No key is embedded in the repository.
 
-Push to `main` or run **Actions → Build unsigned IPA → Run workflow**. Download the `Streamy-ipa` artifact and sideload the IPA with your signing tool.
+## Build
 
-The IPA is unsigned. Sign it with SideStore, AltStore, Sideloadly, or another compatible tool before installing.
+The repository uses XcodeGen and the xcode-27 GitHub Actions runner.
+
+1. Push to main or manually run Actions → Build unsigned IPA.
+2. Download the SavorCart-ipa artifact.
+3. Extract the artifact and sideload SavorCart.ipa using SideStore, AltStore or another compatible signer.
+
+The IPA is unsigned. Sign it on your own device before installing.
 
 ## Privacy
 
-Streamy has no analytics, ads, app account, or backend. Microsoft sign-in and website data are handled by Microsoft's website and the system WebKit website data store. Clearing website data signs you out of Xbox in Streamy.
+Recipes, pantry inventory and shopping lists are stored locally on the iPhone. The Groq key is stored in Keychain and sent only to Groq for recipe generation. Walmart product search requests go directly to Walmart. No app backend, account, analytics or tracking is included.
