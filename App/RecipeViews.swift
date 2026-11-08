@@ -220,7 +220,7 @@ struct PantryView: View {
                     }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || Double(quantity) == nil)
                 }
             }
-            Section("Your inventory") {
+            Section {
                 if model.pantry.isEmpty {
                     ContentUnavailableView("Pantry is empty", systemImage: "cabinet",
                         description: Text("Add ingredients you own. The recipe builder will subtract matching quantities."))
@@ -239,7 +239,9 @@ struct PantryView: View {
                         }
                     }
                 }
-            }.footer {
+            } header: {
+                Text("Your inventory")
+            } footer: {
                 Text("Pantry deductions require matching ingredient names and units. Check quantities before shopping.")
             }
         }.navigationTitle("Pantry")
