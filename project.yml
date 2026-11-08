@@ -28,6 +28,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         CADisableMinimumFrameDurationOnPhone: true
+        GCSupportsControllerUserInteraction: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.streamy
