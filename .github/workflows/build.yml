@@ -1,0 +1,79 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify Apple toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate app icon
+        run: |
+          mkdir -p App/Assets.xcassets/AppIcon.appiconset
+          swift scripts/make_icon.swift App/Assets.xcassets/AppIcon.appiconset/icon.png
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Archive unsigned app
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild archive \
+            -project Streamy.xcodeproj \
+            -scheme Streamy \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Streamy.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            2>&1 | tee build/xcodebuild.log
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/Streamy.xcarchive/Products/Applications -maxdepth 1 -name '*.app' | head -n 1)
+          test -n "$APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry Streamy.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Streamy-ipa
+          path: Streamy.ipa
+          if-no-files-found: error
+
+      - name: Print build errors
+        if: failure()
+        run: grep -E "error:" build/xcodebuild.log | sort -u | head -60 || true
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Streamy-build-log
+          path: build/xcodebuild.log
+          if-no-files-found: ignore
