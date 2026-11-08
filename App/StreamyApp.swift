@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct StreamyApp: App {
     @State private var model = AppModel()
-    @AppStorage("savorcart.appearance") private var appearance = "system"
+    @AppStorage("frugalfork.appearance") private var appearance = "system"
 
     private var preferredScheme: ColorScheme? {
         switch appearance {
