@@ -1,4 +1,4 @@
-name: SavorCart
+name: FrugalFork
 
 options:
   deploymentTarget:
@@ -8,13 +8,13 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1"
-    PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.savorcart
+    PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.frugalfork
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
 targets:
-  SavorCart:
+  FrugalFork:
     type: application
     platform: iOS
     sources:
@@ -22,13 +22,13 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: SavorCart
+        CFBundleDisplayName: FrugalFork
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         CADisableMinimumFrameDurationOnPhone: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.savorcart
+        PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.frugalfork
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
