@@ -1,90 +1,66 @@
 import SwiftUI
-import WebKit
-import UIKit
 
 struct SettingsView: View {
-    @AppStorage("streamy.keepAwake") private var keepAwake = true
-    @Environment(\.dismiss) private var dismiss
-    @State private var showClearConfirmation = false
-    @State private var showClearedAlert = false
+    @Environment(AppModel.self) private var model
+    @State private var apiKey = ""
+    @State private var keySaved = false
+    @State private var keyError: String?
+    @State private var showResetConfirmation = false
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Playback") {
-                    Toggle(isOn: $keepAwake) {
-                        Label("Keep screen awake", systemImage: "sun.max")
-                    }
-                    .onChange(of: keepAwake) { _, newValue in
-                        UIApplication.shared.isIdleTimerDisabled = newValue
-                    }
-
-                    LabeledContent("Streaming service", value: "Xbox Cloud Gaming")
-                    LabeledContent("App mode", value: "In-app WebKit")
+        Form {
+            Section("Groq AI") {
+                SecureField("Groq API key", text: $apiKey)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                HStack {
+                    Image(systemName: model.configuredGroqKey ? "checkmark.shield.fill" : "exclamationmark.shield")
+                        .foregroundStyle(model.configuredGroqKey ? .green : .secondary)
+                    Text(model.configuredGroqKey ? "API key stored in iOS Keychain" : "No API key saved")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
-
-                Section("Privacy") {
-                    Text("Streamy has no app account, ads, analytics, or backend. Microsoft handles Xbox sign-in and cloud streaming. Your sign-in session is stored by WebKit on this device.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-
-                    Button(role: .destructive) {
-                        showClearConfirmation = true
-                    } label: {
-                        Label("Clear Xbox sign-in and website data", systemImage: "trash")
-                    }
-                }
-
-                Section("About") {
-                    LabeledContent("Version", value: "1.0")
-                    Link(destination: URL(string: "https://www.xbox.com/play")!) {
-                        Label("Xbox Cloud Gaming", systemImage: "gamecontroller")
-                    }
-                    Link(destination: URL(string: "https://support.xbox.com/")!) {
-                        Label("Xbox Support", systemImage: "questionmark.circle")
-                    }
-                }
+                Button("Save API key") {
+                    do {
+                        try KeychainStore.save(apiKey.trimmingCharacters(in: .whitespacesAndNewlines))
+                        apiKey = ""; keySaved = true; keyError = nil
+                    } catch { keyError = error.localizedDescription }
+                }.disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if keySaved { Label("Saved securely", systemImage: "checkmark.circle.fill").font(.footnote).foregroundStyle(.green) }
+                if let keyError { Text(keyError).font(.footnote).foregroundStyle(.red) }
+                Button("Remove API key", role: .destructive) {
+                    do { try KeychainStore.delete(); keySaved = false }
+                    catch { keyError = error.localizedDescription }
+                }.disabled(!model.configuredGroqKey)
+            } footer: {
+                Text("Your key stays on this iPhone in Keychain. It is sent directly to Groq when you generate a recipe. Never paste it into a public repository.")
             }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+            Section("Walmart") {
+                TextField("ZIP code", text: $model.zipCode)
+                    .keyboardType(.numberPad)
+                    .onChange(of: model.zipCode) { _, newValue in
+                        model.zipCode = String(newValue.filter(\.isNumber).prefix(5))
                     }
-                }
+                Text("Your ZIP helps you check local Walmart listings. The app does not sign in to Walmart or access your account.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
-            .confirmationDialog(
-                "Clear saved Xbox website data?",
-                isPresented: $showClearConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Clear Website Data", role: .destructive) {
-                    clearWebsiteData()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This signs you out of Xbox in Streamy and removes saved website data from WebKit.")
+            Section("Privacy & storage") {
+                Label("Recipes, pantry and shopping lists stay on this device.", systemImage: "iphone")
+                Label("No account, analytics, ads or subscription.", systemImage: "hand.raised")
+                Button("Erase all local app data", role: .destructive) { showResetConfirmation = true }
             }
-            .alert("Website data cleared", isPresented: $showClearedAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Your Xbox website session and cached site data have been removed.")
+            Section("About") {
+                LabeledContent("App", value: "SavorCart")
+                LabeledContent("Version", value: "1.0")
+                Link("Groq API documentation", destination: URL(string: "https://console.groq.com/docs")!)
+                Link("Walmart.com", destination: URL(string: "https://www.walmart.com")!)
             }
         }
-        .preferredColorScheme(.dark)
-    }
-
-    private func clearWebsiteData() {
-        let store = WKWebsiteDataStore.default()
-        let types = WKWebsiteDataStore.allWebsiteDataTypes()
-
-        store.fetchDataRecords(ofTypes: types) { records in
-            store.removeData(ofTypes: types, for: records) {
-                Task { @MainActor in
-                    showClearedAlert = true
-                }
-            }
+        .navigationTitle("Settings")
+        .onAppear { keySaved = model.configuredGroqKey }
+        .confirmationDialog("Erase recipes, pantry and shopping list?", isPresented: $showResetConfirmation, titleVisibility: .visible) {
+            Button("Erase local data", role: .destructive) { model.resetLocalData() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your Groq API key will remain in Keychain.")
         }
     }
 }
