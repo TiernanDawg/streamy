@@ -8,13 +8,14 @@ Streamy is a standalone iPhone app shell for Xbox Cloud Gaming. It opens the off
 - Uses the persistent default WebKit website data store so Microsoft sign-in cookies can survive app launches.
 - Keeps browser chrome and Safari navigation UI out of the experience.
 - Provides native back, reload, loading, and error controls.
+- Makes the embedded WebKit view first responder to enable WebKit's Gamepad API path where supported.
 - Allows inline media playback and supports landscape orientations.
 - Includes a settings screen and a one-tap option to clear Xbox website data.
 - Builds an unsigned IPA through GitHub Actions on `xcode-27`.
 
 ## Important compatibility boundary
 
-Microsoft's published iOS instructions direct users to Safari for Xbox Cloud Gaming. Streamy uses the official Xbox website in WebKit; Microsoft does not document or guarantee that the full streaming, Microsoft sign-in, and Gamepad API experience works inside a third-party `WKWebView`. Validate sign-in, game launch, controller input, and audio on the physical iPhone before relying on it.
+Microsoft's published iOS instructions direct users to Safari for Xbox Cloud Gaming. Streamy uses the official Xbox website in WebKit; Microsoft does not document or guarantee that the full streaming, Microsoft sign-in, and Gamepad API experience works inside a third-party `WKWebView`. Validate sign-in, game launch, controller input, and audio on the physical iPhone before relying on it. The embedded view explicitly becomes first responder because WebKit has documented that focus is required for Gamepad API events in embedded views.
 
 A native client such as RayxCloud/Stratix can avoid the website entirely, but it implements Microsoft's undocumented, proprietary xCloud session and signaling protocol. This project deliberately does not copy or depend on those private endpoints.
 
