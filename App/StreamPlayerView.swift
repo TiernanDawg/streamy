@@ -20,119 +20,109 @@ final class WebViewState {
         errorMessage = nil
         webView?.reload()
     }
-
-    func goToXboxHome() {
-        errorMessage = nil
-        webView?.load(URLRequest(url: URL(string: "https://www.xbox.com/play")!))
-    }
 }
 
 struct StreamPlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var state = WebViewState()
+    @State private var showSettings = false
     @AppStorage("streamy.keepAwake") private var keepAwake = true
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack(alignment: .bottomTrailing) {
             Color.black.ignoresSafeArea()
 
             WebContentView(state: state)
-                .ignoresSafeArea()
+                .ignoresSafeArea(.all)
 
-            VStack(spacing: 0) {
-                HStack(spacing: 12) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .accessibilityLabel("Close Xbox Cloud Gaming")
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("XBOX CLOUD GAMING")
-                            .font(.system(size: 10, weight: .bold))
-                            .tracking(1)
-                            .foregroundStyle(.white.opacity(0.7))
-                        Text(state.isLoading ? "Connecting…" : "Running inside Streamy")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white)
-                    }
-
-                    Spacer()
-
-                    Button {
-                        state.goBack()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(state.canGoBack ? .white : .white.opacity(0.35))
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .disabled(!state.canGoBack)
-                    .accessibilityLabel("Go back")
-
-                    Button {
-                        state.reload()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .accessibilityLabel("Reload Xbox Cloud Gaming")
+            // Keep native controls off the Xbox page's top navigation and game cards.
+            Menu {
+                Button {
+                    state.goBack()
+                } label: {
+                    Label("Go Back", systemImage: "chevron.left")
                 }
-                .padding(.horizontal, 14)
-                .padding(.top, 8)
-                .padding(.bottom, 10)
-                .background(.ultraThinMaterial)
+                .disabled(!state.canGoBack)
 
-                if state.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                        .padding(.top, 12)
+                Button {
+                    state.reload()
+                } label: {
+                    Label("Reload Xbox", systemImage: "arrow.clockwise")
                 }
 
-                Spacer()
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("Streamy Settings", systemImage: "gearshape")
+                }
 
-                if let error = state.errorMessage {
-                    VStack(spacing: 10) {
-                        Image(systemName: "wifi.exclamationmark")
-                            .font(.system(size: 24))
-                        Text("Couldn't load Xbox Cloud Gaming")
-                            .font(.system(size: 17, weight: .bold))
-                        Text(error)
-                            .font(.system(size: 12))
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.white.opacity(0.72))
-                            .lineLimit(3)
-                        Button("Try again") {
-                            state.reload()
-                        }
-                        .font(.system(size: 14, weight: .bold))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.14), in: Capsule())
-                    }
+                Divider()
+
+                Button(role: .destructive) {
+                    dismiss()
+                } label: {
+                    Label("Close Streamy Player", systemImage: "xmark")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.white)
-                    .padding(20)
-                    .frame(maxWidth: 320)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .padding(.bottom, 28)
+                    .frame(width: 46, height: 46)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                    .contentShape(Circle())
+            }
+            .accessibilityLabel("Player controls")
+            .padding(.trailing, 14)
+            .padding(.bottom, 14)
+
+            if state.isLoading {
+                ProgressView()
+                    .tint(.white)
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 18)
+                    .allowsHitTesting(false)
+            }
+
+            if let error = state.errorMessage {
+                VStack(spacing: 10) {
+                    Image(systemName: "wifi.exclamationmark")
+                        .font(.system(size: 24))
+                    Text("Couldn't load Xbox Cloud Gaming")
+                        .font(.system(size: 17, weight: .bold))
+                    Text(error)
+                        .font(.system(size: 12))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.white.opacity(0.72))
+                        .lineLimit(3)
+                    Button("Try again") {
+                        state.reload()
+                    }
+                    .font(.system(size: 14, weight: .bold))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.white.opacity(0.14), in: Capsule())
                 }
+                .foregroundStyle(.white)
+                .padding(20)
+                .frame(maxWidth: 320)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .statusBarHidden(true)
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = keepAwake
         }
-        .onDisappear {
-            UIApplication.shared.isIdleTimerDisabled = keepAwake
+        .onChange(of: keepAwake) { _, newValue in
+            UIApplication.shared.isIdleTimerDisabled = newValue
         }
     }
 }
@@ -158,6 +148,9 @@ private struct WebContentView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .black
         webView.scrollView.backgroundColor = .black
+        webView.scrollView.contentInset = .zero
+        webView.scrollView.verticalScrollIndicatorInsets = .zero
+        webView.scrollView.horizontalScrollIndicatorInsets = .zero
         state.webView = webView
         webView.becomeFirstResponder()
 
@@ -231,7 +224,6 @@ private struct WebContentView: UIViewRepresentable {
         }
     }
 }
-
 
 private final class GamepadEnabledWebView: WKWebView {
     override var canBecomeFirstResponder: Bool {
