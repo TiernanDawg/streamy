@@ -138,7 +138,6 @@ struct RecipeDetailView: View {
     let recipe: Recipe
     @State private var cookingMode = false
     @State private var added = false
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -206,7 +205,6 @@ struct PantryView: View {
     @State private var quantity = "1"
     @State private var unit = "each"
     private let units = ["each", "oz", "lb", "cup", "tbsp", "tsp", "clove", "can", "jar"]
-
     var body: some View {
         List {
             Section("Add what you already have") {
@@ -278,18 +276,26 @@ struct ShoppingView: View {
                                 }.buttonStyle(.plain)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.name).font(.headline).strikethrough(item.isPurchased)
-                                    Text("Need \(item.neededAmount.formatted(.number.precision(.fractionLength(0...2)))) \(item.unit) · Buy \(item.packageCount) × \(item.packageLabel)")
+                                    Text("Need \(item.neededAmount.formatted(.number.precision(.fractionLength(0...2)))) \(item.unit)")
                                         .font(.caption).foregroundStyle(.secondary)
-                                    if item.leftover > 0.01 {
-                                        Text("Approx. leftover: \(item.leftover.formatted(.number.precision(.fractionLength(0...2)))) \(item.unit)")
-                                            .font(.caption2).foregroundStyle(.secondary)
-                                    }
+                                    Text("Suggested: \(item.packageLabel)")
+                                        .font(.caption2).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 Button { selectedItem = item } label: {
                                     Image(systemName: "magnifyingglass").frame(width: 36, height: 36)
                                         .background(.thinMaterial, in: Circle())
                                 }.buttonStyle(.plain).accessibilityLabel("Find \(item.name) at Walmart")
+                            }
+                            HStack {
+                                Text("Package size (\(item.unit))").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                TextField("Amount", text: Binding(
+                                    get: { String(item.packageAmount) },
+                                    set: { model.updatePackageSize(item, value: $0) }
+                                )).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                                    .frame(width: 76).textFieldStyle(.roundedBorder)
+                                Text("× \(item.packageCount)").font(.caption.monospacedDigit()).frame(minWidth: 35, alignment: .trailing)
                             }
                             HStack {
                                 Text("Price per package").font(.caption).foregroundStyle(.secondary)
@@ -299,6 +305,10 @@ struct ShoppingView: View {
                                     set: { model.updatePrice(item, value: $0) }
                                 )).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                                     .frame(width: 92).textFieldStyle(.roundedBorder)
+                            }
+                            if item.leftover > 0.01 {
+                                Text("Approx. leftover: \(item.leftover.formatted(.number.precision(.fractionLength(0...2)))) \(item.unit)")
+                                    .font(.caption2).foregroundStyle(.secondary)
                             }
                         }.padding(.vertical, 5)
                             .swipeActions {
@@ -324,13 +334,12 @@ struct WalmartSearchView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     private var searchURL: URL { WalmartService.searchURL(for: item.name, zipCode: model.zipCode) }
-
     var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(item.name).font(.title2.bold())
-                    Text("Walmart search · ZIP \(model.zipCode)").font(.caption).foregroundStyle(.secondary)
+                    Text("Saved ZIP: \(model.zipCode) · confirm store on Walmart").font(.caption).foregroundStyle(.secondary)
                     Link(destination: searchURL) {
                         Label("Open Walmart search", systemImage: "arrow.up.right.square").frame(maxWidth: .infinity)
                     }.buttonStyle(.borderedProminent)
@@ -350,7 +359,7 @@ struct WalmartSearchView: View {
                             Text(product.title).font(.headline)
                             if let price = product.verifiedPrice {
                                 Text(NSDecimalNumber(decimal: price), formatter: Self.currencyFormatter).font(.title3.bold())
-                                Text("Retrieved \(product.retrievedAt ?? Date(), style: .time) · Walmart page data")
+                                Text("Verified from Walmart page · \(product.retrievedAt ?? Date(), style: .time)")
                                     .font(.caption2).foregroundStyle(.secondary)
                             } else {
                                 Text("Price not exposed by Walmart").font(.caption).foregroundStyle(.secondary)
@@ -361,7 +370,7 @@ struct WalmartSearchView: View {
                 }
             }
             Section {
-                Text("Prices are shown as verified only when an actual price was retrieved from the Walmart page. Search pages can block automated access or omit local pricing; manually confirm the item, package size, ZIP and final cart price.")
+                Text("Prices are shown as verified only when an actual price was retrieved from the Walmart page. Search pages can block automated access or omit local pricing; manually confirm the item, package size, store ZIP and final cart price.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }
