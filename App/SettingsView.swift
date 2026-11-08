@@ -12,6 +12,10 @@ struct SettingsView: View {
     @State private var apiTestSucceeded = false
     @State private var showResetConfirmation = false
 
+    private var hasKeyToTest: Bool {
+        !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.configuredGroqKey
+    }
+
     var body: some View {
         @Bindable var model = model
         return Form {
@@ -23,18 +27,24 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
             }
+
             Section {
                 SecureField("Groq API key", text: $apiKey)
-                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
                     .onChange(of: apiKey) { _, _ in
                         apiTestMessage = nil
+                        apiTestSucceeded = false
                     }
+
                 HStack {
                     Image(systemName: model.configuredGroqKey ? "checkmark.shield.fill" : "exclamationmark.shield")
                         .foregroundStyle(model.configuredGroqKey ? .green : .secondary)
                     Text(model.configuredGroqKey ? "API key stored in iOS Keychain" : "No API key saved")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
+
                 Button("Save API key") {
                     do {
                         try KeychainStore.save(apiKey.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -42,19 +52,28 @@ struct SettingsView: View {
                         keySaved = true
                         keyError = nil
                         apiTestMessage = nil
-                    } catch { keyError = error.localizedDescription }
-                }.disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        apiTestSucceeded = false
+                    } catch {
+                        keyError = error.localizedDescription
+                    }
+                }
+                .disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
                 Button {
                     Task {
                         isTestingAPIKey = true
                         apiTestMessage = nil
+                        apiTestSucceeded = false
                         defer { isTestingAPIKey = false }
+
+                        let typedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
                         do {
-                            try await GroqService.testAPIKey()
+                            try await GroqService.testAPIKey(typedKey.isEmpty ? nil : typedKey)
                             apiTestSucceeded = true
-                            apiTestMessage = "Connection successful. Your saved key is valid and Groq is reachable."
+                            apiTestMessage = typedKey.isEmpty
+                                ? "Your saved key works. Groq completed a test request with the recipe model."
+                                : "This key works. Tap Save API key to store it securely on this iPhone."
                         } catch {
-                            apiTestSucceeded = false
                             apiTestMessage = error.localizedDescription
                         }
                     }
@@ -64,27 +83,43 @@ struct SettingsView: View {
                         Text(isTestingAPIKey ? "Testing connection…" : "Test API key")
                     }
                 }
-                .disabled(isTestingAPIKey || !model.configuredGroqKey)
+                .disabled(isTestingAPIKey || !hasKeyToTest)
+
                 if let apiTestMessage {
                     Label(apiTestMessage, systemImage: apiTestSucceeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                         .font(.footnote)
                         .foregroundStyle(apiTestSucceeded ? .green : .red)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if keySaved { Label("Saved securely", systemImage: "checkmark.circle.fill").font(.footnote).foregroundStyle(.green) }
-                if let keyError { Text(keyError).font(.footnote).foregroundStyle(.red) }
+
+                if keySaved {
+                    Label("Saved securely", systemImage: "checkmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.green)
+                }
+                if let keyError {
+                    Text(keyError)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+
                 Button("Remove API key", role: .destructive) {
                     do {
                         try KeychainStore.delete()
                         keySaved = false
                         apiTestMessage = nil
-                    } catch { keyError = error.localizedDescription }
-                }.disabled(!model.configuredGroqKey)
+                        apiTestSucceeded = false
+                    } catch {
+                        keyError = error.localizedDescription
+                    }
+                }
+                .disabled(!model.configuredGroqKey)
             } header: {
                 Text("Groq AI")
             } footer: {
-                Text("Your key stays on this iPhone in Keychain. Use Test API key to verify it before generating recipes. The key is sent directly to Groq. Never paste it into a public repository.")
+                Text("Test a newly entered key before saving it, or test the key already stored in Keychain. The key is sent directly to Groq and is never included in the app repository.")
             }
+
             Section("Walmart") {
                 TextField("ZIP code", text: $model.zipCode)
                     .keyboardType(.numberPad)
@@ -92,13 +127,18 @@ struct SettingsView: View {
                         model.zipCode = String(newValue.filter(\.isNumber).prefix(5))
                     }
                 Text("Saved for reference. Walmart may ask you to choose a store or delivery ZIP on its website; the app cannot set your Walmart account location.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
+
             Section("Privacy & storage") {
                 Label("Recipes, pantry and shopping lists stay on this device.", systemImage: "iphone")
                 Label("No account, analytics, ads or subscription.", systemImage: "hand.raised")
-                Button("Erase all local app data", role: .destructive) { showResetConfirmation = true }
+                Button("Erase all local app data", role: .destructive) {
+                    showResetConfirmation = true
+                }
             }
+
             Section("About") {
                 LabeledContent("App", value: "FrugalFork")
                 LabeledContent("Version", value: "1.0")
