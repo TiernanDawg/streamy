@@ -85,6 +85,13 @@ final class AppModel {
         let cleaned = value.replacingOccurrences(of: "$", with: "").replacingOccurrences(of: ",", with: "")
         shoppingItems[index].manualPrice = Decimal(string: cleaned).map { NSDecimalNumber(decimal: $0).doubleValue }
     }
+    func updatePackageSize(_ item: ShoppingItem, value: String) {
+        guard let amount = Double(value), amount > 0,
+              let index = shoppingItems.firstIndex(where: { $0.id == item.id }) else { return }
+        shoppingItems[index].packageAmount = amount
+        shoppingItems[index].packageUnit = item.unit
+        shoppingItems[index].packageCount = max(1, Int(ceil(item.neededAmount / amount)))
+    }
     func removeShoppingItem(_ item: ShoppingItem) { shoppingItems.removeAll { $0.id == item.id } }
     func clearShoppingList() { shoppingItems.removeAll() }
     func deleteRecipe(_ recipe: Recipe) { recipes.removeAll { $0.id == recipe.id } }
