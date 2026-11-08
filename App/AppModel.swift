@@ -7,7 +7,7 @@ final class AppModel {
     var recipes: [Recipe] = [] { didSet { save() } }
     var pantry: [PantryItem] = [] { didSet { save() } }
     var shoppingItems: [ShoppingItem] = [] { didSet { save() } }
-    var zipCode: String = "18301" {
+    var zipCode: String = "" {
         didSet { UserDefaults.standard.set(zipCode, forKey: "savorcart.zip") }
     }
     var isGenerating = false
@@ -19,7 +19,7 @@ final class AppModel {
 
     init() {
         let defaults = UserDefaults.standard
-        zipCode = defaults.string(forKey: "savorcart.zip") ?? "18301"
+        zipCode = defaults.string(forKey: "savorcart.zip") ?? ""
         recipes = Self.decode([Recipe].self, key: recipesKey, fallback: [])
         pantry = Self.decode([PantryItem].self, key: pantryKey, fallback: [])
         shoppingItems = Self.decode([ShoppingItem].self, key: shoppingKey, fallback: [])
