@@ -8,7 +8,8 @@ struct SettingsView: View {
     @State private var showResetConfirmation = false
 
     var body: some View {
-        Form {
+        @Bindable var model = model
+        return Form {
             Section("Groq AI") {
                 SecureField("Groq API key", text: $apiKey)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -21,7 +22,9 @@ struct SettingsView: View {
                 Button("Save API key") {
                     do {
                         try KeychainStore.save(apiKey.trimmingCharacters(in: .whitespacesAndNewlines))
-                        apiKey = ""; keySaved = true; keyError = nil
+                        apiKey = ""
+                        keySaved = true
+                        keyError = nil
                     } catch { keyError = error.localizedDescription }
                 }.disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 if keySaved { Label("Saved securely", systemImage: "checkmark.circle.fill").font(.footnote).foregroundStyle(.green) }
