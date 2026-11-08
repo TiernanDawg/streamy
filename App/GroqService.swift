@@ -29,15 +29,69 @@ enum GroqService {
     private static let recipeModel = "openai/gpt-oss-20b"
     private static let baseURL = URL(string: "https://api.groq.com/openai/v1")!
 
+    // GPT-OSS 20B supports Groq strict structured outputs. This prevents
+    // malformed or schema-invalid JSON from failing before the app can parse it.
+    private static let recipeResponseFormat: [String: Any] = [
+        "type": "json_schema",
+        "json_schema": [
+            "name": "frugalfork_recipe",
+            "strict": true,
+            "schema": [
+                "type": "object",
+                "properties": [
+                    "title": ["type": "string"],
+                    "summary": ["type": "string"],
+                    "servings": ["type": "integer"],
+                    "prepMinutes": ["type": "integer"],
+                    "cookMinutes": ["type": "integer"],
+                    "ingredients": [
+                        "type": "array",
+                        "items": [
+                            "type": "object",
+                            "properties": [
+                                "name": ["type": "string"],
+                                "amount": ["type": "number"],
+                                "unit": ["type": "string"],
+                                "category": ["type": "string"],
+                                "packageAmount": ["type": "number"],
+                                "packageUnit": ["type": "string"],
+                                "packageLabel": ["type": "string"]
+                            ],
+                            "required": ["name", "amount", "unit", "category", "packageAmount", "packageUnit", "packageLabel"],
+                            "additionalProperties": false
+                        ]
+                    ],
+                    "instructions": ["type": "array", "items": ["type": "string"]],
+                    "tips": ["type": "array", "items": ["type": "string"]]
+                ],
+                "required": ["title", "summary", "servings", "prepMinutes", "cookMinutes", "ingredients", "instructions", "tips"],
+                "additionalProperties": false
+            ]
+        ]
+    ]
+
     static func testAPIKey() async throws {
         guard let apiKey = KeychainStore.load(),
               !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw GroqError.missingKey
         }
-        var request = URLRequest(url: baseURL.appendingPathComponent("models"))
-        request.httpMethod = "GET"
-        request.timeoutInterval = 20
+
+        // Test an actual completion, not merely whether the key can list models.
+        let body: [String: Any] = [
+            "model": recipeModel,
+            "messages": [
+                ["role": "system", "content": "Return a valid JSON object with one short test string."],
+                ["role": "user", "content": "Reply with JSON containing the key result and value \"connection successful\"."]
+            ],
+            "response_format": ["type": "json_object"],
+            "max_tokens": 80
+        ]
+        var request = URLRequest(url: baseURL.appendingPathComponent("chat/completions"))
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await URLSession.shared.data(for: request)
@@ -48,9 +102,12 @@ enum GroqService {
         guard (200...299).contains(http.statusCode) else {
             throw GroqError.http(status: http.statusCode, data: data)
         }
-        let models = try JSONDecoder().decode(GroqModelsResponse.self, from: data)
-        guard models.data.contains(where: { $0.id == recipeModel }) else {
-            throw GroqError.modelUnavailable
+        let result = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let choices = result?["choices"] as? [[String: Any]]
+        guard let message = choices?.first?["message"] as? [String: Any],
+              let content = message["content"] as? String,
+              !content.isEmpty else {
+            throw GroqError.invalidResponse
         }
     }
 
@@ -62,14 +119,7 @@ enum GroqService {
 
         let systemPrompt = """
         You are a practical home cook and grocery-cost optimizer. Create a complete, realistic recipe.
-        Return ONLY one valid JSON object. Do not use Markdown or code fences.
-        Use this exact shape:
-        {
-          "title": "string", "summary": "string", "servings": 4,
-          "prepMinutes": 10, "cookMinutes": 20,
-          "ingredients": [{"name":"ingredient","amount":1.5,"unit":"cup","category":"Produce","packageAmount":8,"packageUnit":"oz","packageLabel":"small practical package"}],
-          "instructions": ["step one", "step two"], "tips": ["optional tip"]
-        }
+        The response is constrained to a JSON schema. Fill every required field with the correct type.
         Rules:
         - Ingredient quantities must be numeric and sufficient to make the complete meal.
         - Use common US kitchen units (oz, lb, cup, tbsp, tsp, each, clove).
@@ -79,6 +129,8 @@ enum GroqService {
         - Do not include prices, nutrition claims, or ingredients unused in the instructions.
         - Include safe, sequential cooking instructions and realistic prep/cook times.
         - Return the requested serving count exactly.
+        - Include every ingredient needed by the instructions.
+        - Use an empty tips array if there are no useful tips.
         """
 
         let userPrompt = """
@@ -95,7 +147,7 @@ enum GroqService {
                 ["role": "system", "content": systemPrompt],
                 ["role": "user", "content": userPrompt]
             ],
-            "response_format": ["type": "json_object"]
+            "response_format": recipeResponseFormat
         ]
         var request = URLRequest(url: baseURL.appendingPathComponent("chat/completions"))
         request.httpMethod = "POST"
@@ -121,7 +173,12 @@ enum GroqService {
         let cleaned = content.replacingOccurrences(of: "```json", with: "")
             .replacingOccurrences(of: "```", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let draft = try JSONDecoder().decode(RecipeDraft.self, from: Data(cleaned.utf8))
+        let draft: RecipeDraft
+        do {
+            draft = try JSONDecoder().decode(RecipeDraft.self, from: Data(cleaned.utf8))
+        } catch {
+            throw GroqError.invalidRecipeData
+        }
         guard !draft.title.isEmpty, !draft.ingredients.isEmpty, !draft.instructions.isEmpty else {
             throw GroqError.incompleteRecipe
         }
@@ -137,7 +194,7 @@ enum GroqService {
 }
 
 enum GroqError: LocalizedError {
-    case missingKey, invalidResponse, incompleteRecipe, modelUnavailable
+    case missingKey, invalidResponse, invalidRecipeData, incompleteRecipe
     case connection(String)
     case http(status: Int, data: Data)
 
@@ -147,10 +204,10 @@ enum GroqError: LocalizedError {
             return "No Groq API key is saved. Add one in Settings."
         case .invalidResponse:
             return "Groq returned an unreadable response. Please try again."
+        case .invalidRecipeData:
+            return "Groq responded, but the recipe data could not be read. Please try again."
         case .incompleteRecipe:
             return "The generated recipe was missing ingredients or instructions. Try a more specific meal idea."
-        case .modelUnavailable:
-            return "The key is valid, but Groq did not list the recipe model (openai/gpt-oss-20b) for this account."
         case .connection(let detail):
             return "Could not reach Groq. Check your internet connection and try again. Details: \(detail)"
         case .http(let status, let data):
