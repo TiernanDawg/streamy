@@ -1,4 +1,4 @@
-name: Streamy
+name: SavorCart
 
 options:
   deploymentTarget:
@@ -8,13 +8,13 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1"
-    PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.streamy
+    PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.savorcart
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
 targets:
-  Streamy:
+  SavorCart:
     type: application
     platform: iOS
     sources:
@@ -22,16 +22,13 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Streamy
+        CFBundleDisplayName: SavorCart
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
         CADisableMinimumFrameDurationOnPhone: true
-        GCSupportsControllerUserInteraction: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.streamy
+        PRODUCT_BUNDLE_IDENTIFIER: com.tiernan.savorcart
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
